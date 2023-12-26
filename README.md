@@ -1,5 +1,7 @@
-# Features
+# Trendverse
+## Full Stack Social Media Platform using Typescript, ExpressJS, NodeJS, PostgreSQL, BcryptJS, JWT, ReactJS.
 
+# Features
 - Authentication system for logging in, logging out, and signing up for accounts
 - ## Personalized Recommendation System
 - Users get similar posts based on who they follow
