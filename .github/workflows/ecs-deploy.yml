@@ -36,21 +36,21 @@ jobs:
     - name: Log in to Amazon ECR
       id: login-ecr
       run: |
-        aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws/j6k4z2y5
+        aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ secrets.ECR_REPOSITORY }}
 
       # testing cache
     - name: Build, tag, and push docker image to Amazon ECR Public
       run: |
         docker-compose -f server/docker-compose.yml build
         docker ps -a
-        docker tag trendverse-backend:latest ${{ secrets.ECR_REPOSITORY_BACKEND }}:latest
-        docker tag trendverse-redis:latest ${{ secrets.ECR_REPOSITORY_REDIS }}:latest
+        docker tag trendverse-backend:latest ${{ secrets.ECR_REPOSITORY }}/trendverse-backend:latest
+        docker tag trendverse-redis:latest ${{ secrets.ECR_REPOSITORY }}/trendverse-redis:latest
       
     - name: Push Redis image to ECR
-      run: docker push ${{ secrets.ECR_REPOSITORY_REDIS }}:latest
+      run: docker push ${{ secrets.ECR_REPOSITORY }}/trendverse-redis:latest
 
     - name: Push Backend image to ECR
-      run: docker push ${{ secrets.ECR_REPOSITORY_BACKEND }}:latest
+      run: docker push ${{ secrets.ECR_REPOSITORY }}/trendverse-backend:latest
 
     - name: Update ECS service with new images
       run: |
