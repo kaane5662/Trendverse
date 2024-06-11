@@ -169,7 +169,7 @@ router.get("/profile/:id", async (req, res)=>{
     
 })
 
-// grt specific post image gouerge fkergker dksefjregkefefewggcderr
+// grt specific post image gouerge fkergker dksefjregkefefewggcderrsdss
 router.get("/images/:id", async (req,res)=>{
     const {id} = req.params
     const results = await pool.query("select * from media where post_id = $1", [id])
