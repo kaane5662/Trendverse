@@ -13,7 +13,8 @@ export default function ProfilePosts(){
         display_name: String,
         content: String,
         id: Number,
-        tags: String[]
+        tags: String[],
+        likes: Number
     }
 
 
@@ -33,11 +34,11 @@ export default function ProfilePosts(){
     }, [window.location.href])
 
     return(
-        <div className=" flex flex-col gap-8 p-24">
+        <div className=" flex flex-col gap-8 px-24 p-24">
             
             {Posts?.map((post, index)=>{
                 return(
-                    <Post key = {index} tags = {post.tags} post_id = {post.id} content ={post.content} display_name = {post.display_name} username = {post.username}></Post>
+                    <Post key = {index} tags = {post.tags} post_id = {post.id} content ={post.content} display_name = {post.display_name} username = {post.username} owner_id = {post.owner_id} likes = {post.likes}></Post>
                 )
             })}
         </div>

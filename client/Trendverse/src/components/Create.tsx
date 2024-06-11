@@ -8,7 +8,7 @@ export default function Create(){
         e.preventDefault()
         const formData = new FormData(e.currentTarget);
         console.log(formData)
-        axios.post(`http://localhost:3000/api/posts`, formData, {
+        axios.post(`${import.meta.env.VITE_SERVER}/api/posts`, formData, {
             headers: {
               'Content-Type': 'multipart/form-data', // Important for sending form data
               // You might need additional headers, such as authentication tokens, etc.
@@ -16,21 +16,22 @@ export default function Create(){
             withCredentials: true
         }).then((response)=>{
             console.log(response)
+            window.location.reload()
         }).catch(error=>{
+            
             console.log(error.message)
         })
     }
 
     return(
-        <form onSubmit={uploadPost} className="flex gap-4 flex-col">
+        <form onSubmit={uploadPost} className="flex gap-4 bg-white p-8 rounded-xl flex-col">
             <div className="flex gap-4">
-
-                <img className=" h-16 w-16 object-scale-down bg-complementary rounded-2xl "></img>
-                <textarea name = "content" className="p-4 text-2xl w-[100%] h-[250px] rounded-2xl bg-black bg-opacity-0 border-secondary border-2 border-opacity-40" placeholder="Share your Experience!"></textarea>
+                <img className=" h-12 w-12 object-cover bg-complementary rounded-full "></img>
+                <textarea name = "content" className="p-4 text-xl w-[100%] min-h-[100px]  bg-black bg-opacity-0  border-b-2 " placeholder="Share your Experience!"></textarea>
             </div>
-            <div className="flex gap-4 justify-end items-center">
-                <input name = "uploads" type="file" multiple = {true} className="bg-primary text-secondary rounded-md "></input>
-                <button type="submit" className="bg-complementary text-xl rounded-2xl w-[250px] self-end  h-[45px] text-primary hover:scale-105 duration-300">Post</button>
+            <div className="flex justify-end items-center">
+                <input name = "uploads" type="file" multiple = {true} className=" file:bg-primary file:text-secondary file:border-none file:rounded-md file:p-1 text-secondary rounded-md w-fit file:w-fit "></input>
+                <button type="submit" className="bg-complementary text-lg rounded-md self-end p-2 px-8 text-primary hover:scale-105 duration-300 font-bold">Post</button>
             </div>
         </form>
     )

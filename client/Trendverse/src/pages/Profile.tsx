@@ -12,15 +12,11 @@ export default function Profile(){
         console.log(window.location.href)
     },[window.location.href])
     return(
-        <div className="grid grid-cols-5 h-screen">
-            <Sidebar></Sidebar>
-            <div className="bg-primary"></div>
-            <div className="bg-primary col-span-3">
-                <ProfileHeader/>
-                <ProfilePosts/>
-            </div>
-            <div className="bg-primary"></div>
-            <Notifications></Notifications>
+       
+        <div className="bg-primary col-span-3 p-64 py-0 min-h-screen">
+            <ProfileHeader/>
+            <ProfilePosts/>
         </div>
+        
     )
 }

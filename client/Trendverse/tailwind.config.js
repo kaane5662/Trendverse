@@ -7,12 +7,12 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        josefin: ["Josefin Sans", "Sans-Serif"]
+        josefin: ["Outfit", "Sans-Serif"]
       },
       colors: {
-        primary: "#ffffff",
-        secondary: "#110d31",
-        complementary: "#4d3ccd"
+        primary: "#edf2f4 ",
+        secondary: "#313638",
+        complementary: "#d90429"
       }
     },
   },

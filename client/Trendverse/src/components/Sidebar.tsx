@@ -27,35 +27,40 @@ export default function Sidebar(){
         
     }
 
+    const logout = ()=>{
+        axios.delete(`${import.meta.env.VITE_SERVER}/api/accounts`, {withCredentials: true}).then((response)=>{
+            navigate("/login",{replace:true})
+            window.location.reload()
+        }).catch((error)=>{
+            console.log(error)
+        })
+    }
     useEffect(()=>{
         getUserData()
     },[])
 
     return(
         
-        <nav className="h-screen fixed -left-2 w-fit bg-primary p-12 font-josefin text-secondary flex flex-col gap-16  border-r-2 border-r-primary border-opacity-50">
+        <nav className="h-screen  bg-white p-12 font-josefin text-secondary flex flex-col gap-8 border-r-2 fixed z-50 ">
             {searchActive ? (<Searchbar></Searchbar>):(null)}
             
-            <div className="flex gap-8 hover:scale-105 duration-300 hover:cursor-pointer" onClick={()=> navigate("/") }>
-                <FontAwesomeIcon className=" h-6" icon={faHome}></FontAwesomeIcon>
-                <h1 className="font-bold text-lg">Home</h1>
-            </div>
-            <div className="flex gap-8 hover:scale-105 duration-300 cursor-pointer" onClick={()=>setSearchActive(!searchActive)}>
-                <FontAwesomeIcon className=" h-6" icon={faSearch}></FontAwesomeIcon>
-                <h1 className="font-bold text-lg">Search</h1>
-            </div>
-            <div className="flex gap-8 hover:scale-105 duration-300 cursor-pointer">
-                <FontAwesomeIcon className=" h-6" icon={faCircleUser}></FontAwesomeIcon>
-                <h1 onClick={()=> User ? navigate(`/profile/${User?.id}`) : null} className="font-bold text-lg">{User ? User.username : "Profile"}</h1>
-            </div>
-            <div className="flex gap-8 hover:scale-105 duration-300 cursor-pointer">
-            <FontAwesomeIcon className=" h-6" icon={faGear}></FontAwesomeIcon>
-                <h1 onClick={()=> navigate("/settings")} className="font-bold text-lg">Settings</h1>
-            </div>
-            <div className="flex gap-8">
-            <FontAwesomeIcon className=" h-6" icon={faRightFromBracket}></FontAwesomeIcon>
-                <h1 className="font-bold text-lg">Logout</h1>
-            </div>
+            
+            <h1 className=" text-2xl font-bold">Trendverse</h1>
+            <h1 onClick={()=> navigate("/")} className=" text-md text-secondary flex gap-4 items-center hover:bg-complementary hover:text-primary hover:cursor-pointer py-2 rounded-lg " ><FontAwesomeIcon  className=" h-4 cursor-pointer hover:text-primary   rounded-xl" icon={faHome}></FontAwesomeIcon> Home</h1>
+        
+            
+            <h1 onClick={()=>setSearchActive(!searchActive)} className=" text-md text-secondary flex gap-4 items-center hover:bg-complementary hover:text-primary hover:cursor-pointer py-2 rounded-lg"><FontAwesomeIcon  className=" h-4 cursor-pointer hover:text-primary   rounded-xl" icon={faSearch}></FontAwesomeIcon> Search</h1>
+        
+            
+            <h1 onClick={()=> User ? navigate(`/profile/${User?.id}`) : null} className=" text-md text-secondary   flex gap-4 items-center hover:bg-complementary hover:text-primary hover:cursor-pointer py-2 rounded-lg"><FontAwesomeIcon  className=" h-4 cursor-pointer hover:text-primary   rounded-xl" icon={faCircleUser}></FontAwesomeIcon>{User ? User.username : "Profile"}</h1>
+            
+            
+            <h1 onClick={()=> navigate("/settings")} className=" text-md text-secondary    flex gap-4 items-center hover:bg-complementary py-2 rounded-lg cursor-pointer hover:text-primary  "><FontAwesomeIcon  className=" h-4  rounded-xl" icon={faGear}></FontAwesomeIcon> Settings</h1>
+            
+            
+            
+            <h1 onClick={logout} className=" text-md text-secondary    flex gap-4 items-center hover:bg-complementary hover:text-primary hover:cursor-pointer py-2 rounded-lg"><FontAwesomeIcon className=" h-4 cursor-pointer hover:text-primary   rounded-xl " icon={faRightFromBracket}></FontAwesomeIcon> Logout</h1>
+            
             
             
            

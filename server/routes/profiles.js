@@ -4,9 +4,8 @@ const multer = require("multer")
 const {verifyToken} = require("../token")
 const {pool} = require("../dbConfig")
 
-const storage = multer.memoryStorage(); // Use memory storage for storing file buffers
-const upload = multer({ storage: storage });
-const uploadMiddleware = upload.fields([{ name: 'banner', maxCount: 1 }, { name: 'icon', maxCount: 1 }]); 
+const {uploadProfileMedia} = require("../uploadMiddleware")
+ 
 
 router.get("/:id", async (req, res)=>{
     const {id} = req.params
@@ -37,7 +36,7 @@ router.get("/following/:id", async (req, res)=>{
     return res.status(200).json(results.rows)
 })
 
-router.put("/edit", [verifyToken, uploadMiddleware], async(req,res)=>{
+router.put("/edit", [verifyToken, uploadProfileMedia.fields([{ name: 'icon', maxCount: 1 }, { name: 'banner', maxCount: 1 }])], async(req,res)=>{
     const {display_name} = req.body
     const files = req.files
     // console.log(files)
@@ -46,8 +45,8 @@ router.put("/edit", [verifyToken, uploadMiddleware], async(req,res)=>{
     console.log(banner)
     console.log(profileIcon)
     if(display_name) await pool.query("update profile set display_name = $1 where id = $2", [display_name, req.user.id])
-    if(banner) await pool.query("update profile_media set file_name = $1, content_type = $2, data = $3 where profile_id = $4 and media_type = 'banner'", [banner[0].originalname, banner[0].mimetype, banner[0].buffer, req.user.id])
-    if(profileIcon) await pool.query("update profile_media set file_name = $1, content_type = $2, data = $3 where profile_id = $4 and media_type = 'profile'", [profileIcon[0].originalname, profileIcon[0].mimetype, profileIcon[0].buffer, req.user.id])
+    if(banner) await pool.query("update profile_media set file_name = $1, content_type = $2, file_path = $3 where profile_id = $4 and media_type = 'banner'", [banner[0].originalname, banner[0].mimetype, banner[0].destination+banner[0].filename, req.user.id])
+    if(profileIcon) await pool.query("update profile_media set file_name = $1, content_type = $2, file_path = $3 where profile_id = $4 and media_type = 'profile'", [profileIcon[0].originalname, profileIcon[0].mimetype, profileIcon[0].destination+profileIcon[0].filename, req.user.id])
     return res.status(200).send()
 })
 

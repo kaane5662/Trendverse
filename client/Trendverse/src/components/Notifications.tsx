@@ -45,7 +45,7 @@ export default function Notifications(){
     },[])
 
     return(
-        <div className="bg-primary text-secondary w- p-12 h-screen font-josefin flex flex-col gap-8 fixed top-0 right-1 border-l-2 border-l-primary border-opacity-50">
+        <nav className="bg-white text-secondary w-fit p-12 h-screen font-josefin flex flex-col gap-8  right-0 border-l-2 z-50 top-0 fixed">
             <h1 className="font-bold text-2xl">Notifications</h1>
             <div className="flex flex-col gap-8">
                 <h3 className="text-md">Recent Followers</h3>
@@ -62,6 +62,6 @@ export default function Notifications(){
                 })}
                     
             </div>
-        </div>
+        </nav>
     )
 }

@@ -10,15 +10,35 @@ const cookieParser = require("cookie-parser")
 const dotenv = require('dotenv');
 const result = dotenv.config({ path: '../.env' });
 const path = require("path")
-console.log(process.env.CLIENT_DOMAIN)
 
 app.use(cors({
     origin: process.env.CLIENT_DOMAIN,
     credentials: true
 }))
 
+
+const session = require('express-session');
+const {passport} = require("./auth")
+
+
+
+console.log(process.env.CLIENT_DOMAIN)
+
 app.use(cookieParser())
 app.use('/default-icons', express.static(path.join(__dirname, 'public', 'default-icons')));
+
+//new auth stuff
+app.use(session({ secret: process.env.SECRET_JWT, resave: true, saveUninitialized: true }));
+app.use(passport.initialize());
+app.use(passport.session());
+
+//server side media rendering
+app.use('/uploads/posts', express.static(path.join(__dirname, 'uploads/posts')));
+app.use('/uploads/profiles', express.static(path.join(__dirname, 'uploads/profiles')));
+
+
+//end new auth stuff
+
 
 //routes
 app.use("/api/accounts",accounts)

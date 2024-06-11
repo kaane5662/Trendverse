@@ -3,21 +3,20 @@ const router = express.Router()
 const multer = require("multer")
 const {verifyToken} = require("../token")
 const {pool} = require("../dbConfig")
+const {getOrSetCache, redisClient} = require("../helpers/redis")
 
-const storage = multer.memoryStorage(); // Use memory storage for storing file buffers
-const upload = multer({ storage: storage });
-const uploadMiddleware = upload.array('uploads', 3); // 'images' is the field name for the files, and 3 is the maximum number of files
+const {uploadPostMedia} = require("../uploadMiddleware")
 
 // create poste
-router.post("/", [verifyToken, uploadMiddleware], async (req, res)=>{
+router.post("/", [verifyToken, uploadPostMedia.array("uploads",5)], async (req, res)=>{
     const {content} = req.body
-    const words = content.split(" ")
-    const tags = []
-    words.map((word, index)=>{ if(word.startsWith("#")) tags.push(word.substring(1)) })
+    const hashtagRegex = /\B#\w+/g;
+    const tags = content.match(hashtagRegex);
 
     console.log(tags)   
     const userId = req.user.id
     const files = req.files
+    console.log(files[0])
     
     let post;
     try{
@@ -29,8 +28,8 @@ router.post("/", [verifyToken, uploadMiddleware], async (req, res)=>{
     try{
         files.map(async file=>{
             const result = await pool.query(
-                'INSERT INTO media (file_name, content_type, data, post_id) VALUES ($1, $2, $3, $4)',
-                [file.originalname, file.mimetype, file.buffer, post.rows[0].id]
+                'INSERT INTO media (file_name, file_path, content_type, post_id) VALUES ($1, $2, $3, $4)',
+                [file.originalname, `${file.destination}${file.filename}`, file.mimetype,post.rows[0].id]
             );
         })
     }catch(error){
@@ -49,29 +48,58 @@ router.get("/", (req, res)=>{
 })
 
 router.get("/reccomended", verifyToken, async (req,res)=>{
-    const mostViewedRecentTags = await pool.query("with userTags as (select jsonb_array_elements_text(tags) as singleTags from post_logs inner join posts on post_logs.post_id = posts.id where post_logs.user_id = $1 and post_logs.date > CURRENT_DATE-100) select singleTags from userTags group by singleTags order by count(singleTags) desc limit 5", [req.user.id])
-    const stringifiedTags = mostViewedRecentTags.rows.map((tag, index)=> {return JSON.stringify(tag.singletags)})
-    console.log(stringifiedTags)
-    const postsWithTags = await pool.query('select username, display_name, content, tags, posts.id as id from posts inner join profile on posts.owner_id = profile.id where tags @> ANY($1::jsonb[]) order by random()', [stringifiedTags])
+    const reccomended = await pool.query(`
+            -- get all tags that contains user interactions
+            with single_tags as (select jsonb_array_elements_text(tags) as tags from post_logs as pl
+            inner join posts as p on pl.post_id = p.id
+            where pl.user_id = $1 and pl.date >= NOW() - INTERVAL '7 days'),
+
+            -- top 3 viewed tags
+            tt as (select count(tags), array_agg(to_jsonb(tags)) as tag from single_tags
+            group by single_tags
+            order by count(single_tags) desc
+            limit 3)
+
+            -- retrieve similar posts with tags and profiles associated
+            select * from tt, posts as p 
+            join profile on p.owner_id = profile.id
+            where p.tags @> ANY((tt.tag)::jsonb[])
+            order by random()
+            limit 10
+    `, [req.user.id])
+    
+    
     // console.log(postsWithTags.rows)
-    res.status(200).json(postsWithTags.rows)
+    res.status(200).json(reccomended.rows)
+})
+
+
+router.get("/explore", async (req, res)=>{
+    try{
+        const randomPosts = await pool.query("select username, display_name, content, tags, posts.id as id, profile.id as owner_id, likes from posts inner join profile on posts.owner_id = profile.id order by random() limit 5")
+        return res.status(200).json(randomPosts.rows)
+    }catch(error){
+        return res.status(500).json({message: error.message})
+    }
 })
 
 router.put("/search", async(req,res)=>{
     const {filter, tag} = req.body
     console.log(filter+" "+tag)
+
+    const stringifiedTag = JSON.stringify("#"+tag)
     if(filter == "latest" || filter == "earliest"){
         queryFilter = filter == "earliest" ? "asc" : "desc"
 
-        const filteredPostsWithTag = await pool.query(`select username, display_name, content, tags, posts.id as id from posts inner join profile on posts.owner_id = profile.id where tags @> $1::jsonb order by date ${queryFilter}`, [JSON.stringify(tag)])
+        const filteredPostsWithTag = await pool.query(`select username, display_name, content, tags, likes ,posts.id as id from posts inner join profile on posts.owner_id = profile.id where tags @> $1::jsonb order by date ${queryFilter}`, [stringifiedTag])
         return res.status(200).json(filteredPostsWithTag.rows)
     }
     if(filter == "popular"){
-        const popularPostsWithTag = await pool.query(`select username, display_name, content, tags, posts.id as id from posts inner join profile on posts.owner_id = profile.id where tags @> $1::jsonb order by likes desc limit 10`, [JSON.stringify(tag)])
+        const popularPostsWithTag = await pool.query(`select username, display_name, content, tags, likes, posts.id as id from posts inner join profile on posts.owner_id = profile.id where tags @> $1::jsonb order by likes desc limit 100`, [stringifiedTag])
         return res.status(200).json(popularPostsWithTag.rows)
     }
     if(filter == "featured"){
-        const featuredPostsWithTag = await pool.query(`select username, display_name, content, tags, posts.id as id from posts inner join profile on posts.owner_id = profile.id where tags @> $1::jsonb and date between CURRENT_DATE - INTERVAL '1 week' AND CURRENT_DATE order by likes desc limit 10`, [JSON.stringify(tag)])
+        const featuredPostsWithTag = await pool.query(`select username, display_name, content, likes, tags, posts.id as id from posts inner join profile on posts.owner_id = profile.id where tags @> $1::jsonb and date between CURRENT_DATE - INTERVAL '1 week' AND CURRENT_DATE order by likes desc limit 10`, [stringifiedTag])
         return res.status(200).json(featuredPostsWithTag.rows)
 
     }
@@ -79,44 +107,66 @@ router.put("/search", async(req,res)=>{
 })
 
 router.get("/reccomendedFollowing", verifyToken, async (req,res)=>{
-    const mostEngagedFollowingProfiles = await pool.query("select owner_id, count(owner_id) as frequency from profile_logs inner join posts on profile_logs.target_user_id = posts.owner_id inner join post_logs on posts.id = post_logs.post_id where profile_logs.user_id = $1 group by owner_id order by count(owner_id) desc limit 5", [req.user.id])
-    if(mostEngagedFollowingProfiles.rowCount <1 ) return res.status(404).send()
-    const mostEngagedFollowingProfilesIds = mostEngagedFollowingProfiles.rows.map((profile)=>{return profile.owner_id})
-    console.log(mostEngagedFollowingProfilesIds)
-    const reccomendedFollowingsPosts = await pool.query("select posts.id as id, display_name, username, content, tags from profile inner join posts on profile.id = posts.owner_id where posts.owner_id = ANY($1) and posts.date > CURRENT_DATE-1 order by posts.owner_id desc limit 12", [mostEngagedFollowingProfilesIds])
-    res.status(200).json(reccomendedFollowingsPosts.rows)
+    const following = await pool.query(`
+        -- get posts of users following
+        select * from profile_logs as pl
+        join posts on pl.target_user_id = posts.owner_id
+        join profile on posts.owner_id = profile.id
+        where pl.user_id = $1 and action_type = 'follow'
+        order by posts.date desc
+    
+    `, [req.user.id])
+    
+    res.status(200).json(following.rows)
 })
 
 
-//retrieve specific post
+//retrieve specific post, cache revalidation 10 seconds
 router.get("/:id", async (req,res)=>{
     const id = req.params.id
     console.log(id)
-    let responseData = {}
-    // get post content
-    pool.query(("select * from posts where id = $1"), [id], (error, results)=>{
-        if(error) return res.status(500).json({message: error.message})
-        if(results.rows.length == 0) return res.status(404).json({message: "No existing post"})
-        responseData.post = results.rows[0]
-        console.log(responseData)
-        // get post media
-        pool.query(("select * from media where post_id = $1"), [responseData.post.id], (error, results)=>{
-            if(error) return res.status(500).json({message: error.message})
-            responseData.media = results.rows
-            return res.status(200).json(responseData)
-        })
-    })
-
-
+    try{
+        let results = await redisClient.get(`posts?postId=${id}`)
+        if(results != null){
+            // console.log(results)
+            return res.json(JSON.parse(results))
+        }else{
+            let data = {}
+            post_data = await pool.query(("select * from posts where id = $1"), [id])
+            data.post = post_data.rows[0]
+                
+                // console.log(responseData)
+                // get post media
+            media_data  = await pool.query(("select * from media where post_id = $1"), [post_data.id])
+            data.media = media_data.rows
+            console.log(data)
+            await redisClient.setEx(`posts?postId=${id}`,10,JSON.stringify(data))
+            return res.status(200).json(data)
+        }
+    }catch(error){
+        return res.status(500).json({message:error.message})
+    }
+   
 })
 
+// retrieve profile posts based on id, cache revalidation 60s
 router.get("/profile/:id", async (req, res)=>{
     const {id} = req.params
-    console.log(id)
-    const results = await pool.query("select posts.id as id, display_name, username, content, tags from posts inner join profile on posts.owner_id = profile.id where owner_id = $1 order by date desc", [id])
-    if(results.rows == 0) return res.status(404).json({message: "User does not exist"})
-    const posts = results.rows
-    return res.status(200).json(posts)
+    try{
+        let results = await redisClient.get(`profile?profileId=${id}`)
+        if(results != null){
+            // console.log(results)
+            return res.json(JSON.parse(results))
+        }else{
+            const {rows} = await pool.query("select posts.id as id, display_name, username, content, owner_id, tags, likes  from posts inner join profile on posts.owner_id = profile.id where owner_id = $1 order by id desc", [id])
+            await redisClient.setEx(`profile?profileId=${id}`,60,JSON.stringify(rows))
+            return res.status(200).json(rows)
+        }
+    }catch(error){
+        console.log(error)
+        return res.status(500).json({message:error.message})
+    }
+    
 })
 
 

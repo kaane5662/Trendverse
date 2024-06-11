@@ -34,7 +34,7 @@ export default function EngagedFollowerPosts(){
 
     return(
         <div className="gap-8 flex flex-col py-4">
-                <h1 className="text-4xl font-bold">Catch Up:</h1>
+                
                 {Posts?.map((post, index)=>{
                     return(
                         <Post key = {index} tags = {post.tags} post_id = {post.id} content ={post.content} display_name = {post.display_name} username = {post.username}></Post>

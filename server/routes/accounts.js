@@ -5,7 +5,11 @@ const bcryptjs = require("bcryptjs")
 const {generateToken, verifyToken} = require("../token")
 const cookieParser = require("cookie-parser")
 const path = require("path")
+const passport = require("passport")
 const fs = require("fs").promises
+const multer = require("multer")
+
+
 
 router.use(express.json())
 // create an account
@@ -16,15 +20,24 @@ router.post("/", async (req,res)=>{
     if(email.split("@").length != 2) return res.status(500).json({message:"Must be a valid email!"})
     const hashedPassword = await bcryptjs.hash(password, 10)
 
-    const profile_icon_data = await fs.readFile("public/default-icons/profile-icon.jpg") 
-    const banner_icon_data = await fs.readFile("public/default-icons/banner-icon.jpg") 
+    // const profile_icon_data = await fs.readFile("public/default-icons/profile-icon.jpg") 
+    // const banner_icon_data = await fs.readFile("public/default-icons/banner-icon.jpg") 
 
-    const userCreationResults = await pool.query("insert into profile (username, email, display_name, password) values ($1, $2, $3, $4) returning *", [username, email, username, hashedPassword])
+    let userCreationResults;
+    try{
+      userCreationResults = await pool.query("insert into profile (username, email, display_name, password) values ($1, $2, $3, $4) returning *", [username, email, username, hashedPassword])
+    }catch(error){
+      return res.status(500).json({message: error})
+    }
     const newUser = userCreationResults.rows[0]
-    console.log(newUser)
-    const mediaProfileResults = await pool.query("insert into profile_media (file_name, content_type, data, media_type, profile_id) values($1,$2,$3, 'banner',$4)",["profile-icon", "image/jpeg", profile_icon_data, newUser.id])
-    const mediaBannerResults = await pool.query("insert into profile_media (file_name, content_type, data, media_type, profile_id) values($1,$2,$3, 'profile',$4)", ["banner-icon", "image/jpeg", banner_icon_data, newUser.id])
 
+    try{
+      const mediaProfileResults = await pool.query("insert into profile_media (file_name, content_type, file_path,media_type, profile_id) values($1,$2,$3, 'banner',$4)",["profile-icon", "image/jpeg", "", newUser.id])
+      const mediaBannerResults = await pool.query("insert into profile_media (file_name, content_type, file_path, media_type, profile_id) values($1,$2,$3, 'profile',$4)", ["banner-icon", "image/jpeg", "", newUser.id])
+
+    }catch(error){
+      return res.status(500).json({message: error})
+    }
     console.log(newUser)
     const token = generateToken(newUser)
     res.cookie("token", token)
@@ -46,9 +59,41 @@ router.put("/", async (req,res)=>{
     res.status(200).json(token)
 })
 
+
+//auth provider routes
+router.get('/auth/google',
+    passport.authenticate('google', { scope: ['profile', 'email'] })
+);
+
+router.get('/auth/google/callback',
+  passport.authenticate('google', { failureRedirect: '/' }), async (req, res) => {
+    console.log("Call back")
+    // return res.redirect("http://localhost:5173/")
+
+    const {emails, displayName, id} = req.user
+    console.log(emails[0].value)
+    console.log(displayName)
+
+    const result = await pool.query("select * from profile where email = $1", [emails[0].value])
+    if(result.rowCount == 0){
+        
+    }else{
+        const token = generateToken(result.rows[0]);
+        req.user = token
+        res.cookie("token", token, { maxAge: 900000, httpOnly: true })
+        res.status(200)
+        res.redirect(process.env.CLIENT_DOMAIN)
+    }
+    
+    // const token = generateToken(req.user);
+    // res.json(token);
+  }
+);
+
 // delete an account
 router.delete("/", verifyToken,(req,res)=>{
-    
+    res.cookie("token", "")
+    res.status(200).json({message:"Logged out successfully"})
 })
 
 
