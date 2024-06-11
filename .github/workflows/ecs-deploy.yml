@@ -35,7 +35,8 @@ jobs:
 
     - name: Log in to Amazon ECR
       id: login-ecr
-      uses: aws-actions/amazon-ecr-login@v1
+      run: |
+        aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws/j6k4z2y5
 
       # testing cache
     - name: Build, tag, and push docker image to Amazon ECR Public
