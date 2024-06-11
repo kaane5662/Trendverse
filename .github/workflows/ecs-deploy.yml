@@ -42,8 +42,8 @@ jobs:
     - name: Build, tag, and push docker image to Amazon ECR Public
       run: |
         docker-compose -f server/docker-compose.yml build
-        docker tag trendverse-redis:latest ${{ secrets.ECR_REPOSITORY_REDIS }}:latest
-        docker tag trendverse-backend:latest ${{ secrets.ECR_REPOSITORY_BACKEND }}:latest
+        docker tag redis:latest ${{ secrets.ECR_REPOSITORY_REDIS }}:latest
+        docker tag backend:latest ${{ secrets.ECR_REPOSITORY_BACKEND }}:latest
       
     - name: Push Redis image to ECR
       run: docker push ${{ secrets.ECR_REPOSITORY_REDIS }}:latest
