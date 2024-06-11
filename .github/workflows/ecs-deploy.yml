@@ -36,20 +36,20 @@ jobs:
       id: login-ecr
       uses: aws-actions/amazon-ecr-login@v1
       with:
-        region: ${{ secrets .AWS_REGION }}
+        region: ${{ secrets.AWS_REGION }}
 
 
     - name: Build, tag, and push docker image to Amazon ECR Public
       run: |
         docker-compose -f server/docker-compose.yml build
-        docker tag your-redis-image-name:latest ${{ secrets.ECR_REPOSITORY_REDIS }}/redis:latest
-        docker tag your-backend-image-name:latest ${{ secrets.ECR_REPOSITORY_BACKEND }}/backend:latest
+        docker tag your-redis-image-name:latest ${{ secrets.ECR_REPOSITORY_REDIS }}:latest
+        docker tag your-backend-image-name:latest ${{ secrets.ECR_REPOSITORY_BACKEND }}:latest
       
     - name: Push Redis image to ECR
-      run: docker push ${{ secrets.ECR_REPOSITORY_REDIS }}/redis:latest
+      run: docker push ${{ secrets.ECR_REPOSITORY_REDIS }}:latest
 
     - name: Push Backend image to ECR
-      run: docker push ${{ secrets.ECR_REPOSITORY_BACKEND }}/backend:latest
+      run: docker push ${{ secrets.ECR_REPOSITORY_BACKEND }}:latest
 
     - name: Update ECS service with new images
       run: |
