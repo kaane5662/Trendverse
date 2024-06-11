@@ -44,7 +44,7 @@ jobs:
         docker-compose -f server/docker-compose.yml build
         docker ps -a
         docker tag docker.io/library/server_backend:latest ${{ secrets.ECR_REPOSITORY_BACKEND }}:latest
-        docker tag docker.io/library/server_redis:latest ${{ secrets.ECR_REPOSITORY_REDIS }}:latest
+        docker tag redis:latest ${{ secrets.ECR_REPOSITORY_REDIS }}:latest
       
     - name: Push Redis image to ECR
       run: docker push ${{ secrets.ECR_REPOSITORY_REDIS }}:latest
