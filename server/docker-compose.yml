@@ -1,11 +1,13 @@
 services:
 
   backend:
+    image: trendverse-backend
     depends_on:
       - redis
       - postgres
     build: 
       context: ./
+      dockerfile: Dockerfile.backend
     ports:
       - 3000:3000
     volumes:
@@ -17,7 +19,10 @@ services:
     
 
   redis:
-    image: redis:latest
+    image: trendverse-redis
+    build: 
+      context: ./ # Specify the build context directory for Redis
+      dockerfile: Dockerfile.redis  # Specify the Dockerfile for Redis
     ports:
       - 6379:6379
 
