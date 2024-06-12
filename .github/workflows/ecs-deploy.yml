@@ -52,9 +52,10 @@ jobs:
     - name: Push Backend image to ECR
       run: docker push ${{ secrets.ECR_REPOSITORY }}/trendverse-backend:latest
 
-    - name: Update ECS service with new images
-      run: |
-        aws ecs update-service --region us-east-2 --cluster ${{ secrets.ECS_CLUSTER }} --service ${{ secrets.ECS_SERVICE }} --force-new-deployment
+    # autodeploy enabled
+    # - name: Update ECS service with new images
+    #   run: |
+    #     aws ecs update-service --region us-east-2 --cluster ${{ secrets.ECS_CLUSTER }} --service ${{ secrets.ECS_SERVICE }} --force-new-deployment
 
         
 
